@@ -27,7 +27,7 @@ void loop() {
     print2digits(tm.Minute);
     Serial.write(':');
     print2digits(tm.Second);
-    if ((tm.Hour > TURN_ON_HOUR) && (tm.Hour < TURN_OFF_HOUR)) {
+    if ((tm.Hour >= TURN_ON_HOUR) && (tm.Hour < TURN_OFF_HOUR)) {
       Serial.println(" --> Turn ON the lights!");
       digitalWrite(RELAY, LOW);
     }
