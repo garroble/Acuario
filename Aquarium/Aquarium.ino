@@ -1,3 +1,4 @@
+#include "Aquarium.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <Wire.h>
@@ -45,8 +46,8 @@ long    elapsedCtlTime   = 0;
 SoftwareSerial  esp8266(6,7);  //Rx ==> Pin 6; TX ==> Pin7 
 
 // Thingspeak
-String  statusChWriteKey  = "AQTYE4CBHYVKGKAT";
-String  controlChID       = "471666";
+String  statusChWriteKey  = STATUS_CH_WRITE_KEY;
+String  controlChID       = CONTROL_CH_ID;
 long    startWriteTime    = 0;
 long    elapsedWriteTime  = 0;
 long    startReadTime     = 0;
@@ -82,26 +83,18 @@ void setup()
 
 void loop() 
 {
-  RTC.read(tm_Time);
   elapsedWriteTime  = millis() - startWriteTime;
   elapsedReadTime   = millis() - startReadTime;
   elapsedCtlTime    = millis() - startCtlTime;
 
-  if (elapsedCtlTime > (timeBetweenCtl*1000))
-  {
-    LampControl();
-    TempSensor.requestTemperatures();
-    Aquarium.f_Temperature = TempSensor.getTempCByIndex(0);
-    Serial.print("Temperature: ");
-    Serial.println(Aquarium.f_Temperature);
-  }
-
+  // Send data to ThingSpeak
   if (elapsedWriteTime > (timeBetweenWrites*1000))
   {
     SendDataToThingSpeak();
     startWriteTime = millis();
   }
 
+  // Get data from ThingSpeak
   if (elapsedReadTime > (timeBetweenReads*1000))
   {
     AquaControl.b_Filter = ReceiveDataFromThingSpeak(AquaControl.s_FilterField);
@@ -110,10 +103,16 @@ void loop()
     AquaControl.b_Aerator = ReceiveDataFromThingSpeak(AquaControl.s_AeratorField);
     startReadTime   = millis();
   }
-  
+
+  // Control loop
   if (elapsedCtlTime > (timeBetweenCtl*1000))
   {
+    LampTimeControl();
     ActuatorControl();
+    TempSensor.requestTemperatures();
+    Aquarium.f_Temperature = TempSensor.getTempCByIndex(0);
+    Serial.print("Temperature: ");
+    Serial.println(Aquarium.f_Temperature);
     startCtlTime    = millis();
   }
   
@@ -125,14 +124,15 @@ void loop()
   }
 }
 
-void LampControl(void)
+void LampTimeControl(void)
 {
-  if ((tm_Time.Hour > LAMP_ON_HOUR) && (tm_Time.Hour < LAMP_OFF_HOUR)) {
-    Serial.println(" --> Turn ON the lights!");
+  RTC.read(tm_Time);
+  if ((tm_Time.Hour >= LAMP_ON_HOUR) && (tm_Time.Hour < LAMP_OFF_HOUR)) {
+    Serial.println("LampTimeControl --> Turn ON the lights!");
     Aquarium.b_Lamp = true;
   }
   else {
-    Serial.println(" --> Turn OFF the lights");
+    Serial.println("LampTimeControl --> Turn OFF the lights");
     Aquarium.b_Lamp = false;
   }  
 }
@@ -141,11 +141,11 @@ void ActuatorControl(void)
 {
   if (AquaControl.b_Lamp == true) {
     digitalWrite(RELAY_LAMP, !Aquarium.b_Lamp);
-    digitalWrite(LED, !Aquarium.b_Lamp);
+    digitalWrite(LED, Aquarium.b_Lamp);
   }
   else {
     digitalWrite(RELAY_LAMP, HIGH);
-    digitalWrite(LED, HIGH);
+    digitalWrite(LED, LOW);
   }
 }
 

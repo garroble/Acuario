@@ -1,0 +1,7 @@
+#ifndef Aquarium_h
+#define Aquarium_h
+
+#define	STATUS_CH_WRITE_KEY		"WRITE_KEY"
+#define	CONTROL_CH_ID			"CHANNEL_ID"
+
+#endif	//Aquarium_h
