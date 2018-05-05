@@ -232,6 +232,7 @@ int ReceiveDataFromThingSpeak(String fieldID)
   if(esp8266.find("Error"))
   {
     Serial.println("AT+CIPSTART error");
+    b_Error = true;
     return;
   }
 
